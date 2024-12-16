@@ -55,7 +55,7 @@ On Windows:
 
 Modify the configuration file to include:
 
-````json
+```json
 {
   "mcpServers": {
     "mcp-server-toolhouse": {
@@ -81,7 +81,7 @@ This project is not yet configured for ephemeral environments like `uvx`. Run th
 
 ```bash
 git clone https://github.com/toolhouse-community/mcp-server-toolhouse.git
-````
+```
 
 Add this tool as an MCP server.
 
