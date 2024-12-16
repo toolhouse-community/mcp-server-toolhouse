@@ -1,10 +1,13 @@
-# toolhouse-mcp MCP Server
+# Toolhouse MCP Server
 
-MCP project to connect conversational models with Toolhouse's tools. Built on top of [Toolhouse](https://toolhouse.ai/) and Groq's API.
+![](assets/mcp-server-toolhouse-banner.svg)
+
+MCP project to connect MCP clients with Toolhouse's tools. Built on top of [Toolhouse](https://toolhouse.ai/) and Groq's API.
+[The Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) is an open protocol that enables seamless integration between LLM applications and external data sources and tools. Whether you’re building an AI-powered IDE, enhancing a chat interface, or creating custom AI workflows, MCP provides a standardized way to connect LLMs with the context they need.
 
 ## Features
 
-- Allows compatible MCP Clients, like Claude Desktop App, to access a vast library of tools to enhance their capabilities
+- Allows compatible MCP Clients (i.e Claude Desktop App) to access a vast library of tools to enhance their capabilities
 
 ## Configuration
 
@@ -20,11 +23,57 @@ MCP project to connect conversational models with Toolhouse's tools. Built on to
    - Sign up at [Groq](https://groq.com/) if you don’t already have an account.
    - Get your API key from the API console.
 
-3. Set these environment variables:
+3. **Toolhouse Bundle**:
+
+   - Navigate to [Toolhouse Bundles]() and create a bundle with a name i.e. `mcp-toolhouse`
+   - Add the tools that you want to use on your client i.e. Scrape the web, Memory, Send Email
+   - Save the bundle
+
+4. (Optional) Set these environment variables:
    ```bash
    export TOOLHOUSE_API_KEY="your_toolhouse_api_key"
    export GROQ_API_KEY="your_groq_api_key"
+   export TOOLHOUSE_BUNDLE_NAME="your_bundle_name"
    ```
+
+### Starting the server
+
+Add this server to your client's configuration.
+For example on Claude's desktop app navigate to the folder and manually change the settings file called `claude_desktop_config.json`
+
+On MacOS:
+
+```bash
+~/Library/Application\ Support/Claude/claude_desktop_config.json
+```
+
+On Windows:
+
+```bash
+%APPDATA%/Claude/claude_desktop_config.json
+```
+
+Modify the configuration file to include:
+
+````json
+{
+  "mcpServers": {
+    "mcp-server-toolhouse": {
+      "command": "uv",
+      "args": [
+        "/path/to/this/folder/"
+        "run",
+        "mcp-server-toolhouse"
+      ],
+      "env": {
+        "TOOLHOUSE_API_KEY": "your_toolhouse_api_key",
+        "GROQ_API_KEY": "your_groq_api_key",
+        "TOOLHOUSE_BUNDLE_NAME": "a_bundle_name"
+    }
+    }
+  }
+}
+```
 
 ### Run this project locally
 
@@ -32,7 +81,7 @@ This project is not yet configured for ephemeral environments like `uvx`. Run th
 
 ```bash
 git clone https://github.com/toolhouse-community/mcp-server-toolhouse.git
-```
+````
 
 Add this tool as an MCP server.
 
@@ -55,13 +104,14 @@ Modify the configuration file to include:
     "command": "uv",
     "args": [
         "--directory",
-        "/path/to/this/folder/toolhouse_mcp",
+        "/path/to/this/folder/",
         "run",
         "toolhouse-mcp"
     ],
     "env": {
         "TOOLHOUSE_API_KEY": "your_toolhouse_api_key",
-        "GROQ_API_KEY": "your_groq_api_key"
+        "GROQ_API_KEY": "your_groq_api_key",
+        "TOOLHOUSE_BUNDLE_NAME": "a_bundle_name"
     }
 }
 ```
