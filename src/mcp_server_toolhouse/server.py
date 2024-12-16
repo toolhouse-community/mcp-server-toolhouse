@@ -20,13 +20,8 @@ from mcp.types import (
 )
 from toolhouse import Toolhouse
 
-# API keys and configuration constants
-TOOLHOUSE_API_KEY = "bca71613-e4bd-4598-a482-04257508ac25"
-TOOLHOUSE_BUNDLE_NAME = "mcp-toolhouse"
-GROQ_API_KEY = "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"
-
 # Initialize the MCP server
-app = Server("mcp-toolhouse-server")
+app = Server("mcp-server-toolhouse")
 
 
 # Custom exception hierarchy for better error handling
@@ -75,7 +70,7 @@ def setup_logging() -> logging.Logger:
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[logging.FileHandler("mcp-toolhouse.log"), logging.StreamHandler()],
     )
-    return logging.getLogger("mcp-toolhouse-server")
+    return logging.getLogger("mcp-server-toolhouse")
 
 
 LOGGER = setup_logging()
