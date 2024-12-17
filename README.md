@@ -1,8 +1,9 @@
 # Toolhouse MCP Server
 
-![](assets/mcp-server-toolhouse-banner.svg)
+![Toolhouse MCP Server implementation](assets/mcp-server-toolhouse-banner.svg)
 
-MCP project to connect MCP clients with Toolhouse's tools. Built on top of [Toolhouse](https://toolhouse.ai/) and Groq's API.
+This MCP server allows you to connect MCP clients with Toolhouse's tools. Built on top of [Toolhouse](https://toolhouse.ai/) and Groq's API - for fast inference.
+
 [The Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) is an open protocol that enables seamless integration between LLM applications and external data sources and tools. Whether you’re building an AI-powered IDE, enhancing a chat interface, or creating custom AI workflows, MCP provides a standardized way to connect LLMs with the context they need.
 
 ## Features
@@ -29,7 +30,7 @@ MCP project to connect MCP clients with Toolhouse's tools. Built on top of [Tool
    - Add the tools that you want to use on your client i.e. Scrape the web, Memory, Send Email
    - Save the bundle
 
-4. (Optional) Set these environment variables:
+4. (Optional) Set these environment variables if you prefer not having them in the configuration:
    ```bash
    export TOOLHOUSE_API_KEY="your_toolhouse_api_key"
    export GROQ_API_KEY="your_groq_api_key"
@@ -53,7 +54,7 @@ On Windows:
 %APPDATA%/Claude/claude_desktop_config.json
 ```
 
-Modify the configuration file to include:
+Modify the configuration file to look like this:
 
 ```json
 {
@@ -61,7 +62,8 @@ Modify the configuration file to include:
     "mcp-server-toolhouse": {
       "command": "uv",
       "args": [
-        "/path/to/this/folder/"
+        "--directory",
+        "/path/to/this/folder/mcp-server-toolhouse",
         "run",
         "mcp-server-toolhouse"
       ],
@@ -69,7 +71,7 @@ Modify the configuration file to include:
         "TOOLHOUSE_API_KEY": "your_toolhouse_api_key",
         "GROQ_API_KEY": "your_groq_api_key",
         "TOOLHOUSE_BUNDLE_NAME": "a_bundle_name"
-    }
+      }
     }
   }
 }
@@ -104,9 +106,9 @@ Modify the configuration file to include:
     "command": "uv",
     "args": [
         "--directory",
-        "/path/to/this/folder/",
+        "/path/to/this/repo/",
         "run",
-        "toolhouse-mcp"
+        "mcp-server-toolhouse"
     ],
     "env": {
         "TOOLHOUSE_API_KEY": "your_toolhouse_api_key",
