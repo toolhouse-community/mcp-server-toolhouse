@@ -6,6 +6,8 @@ This MCP server allows you to connect MCP clients with Toolhouse's tools. Built 
 
 [The Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) is an open protocol that enables seamless integration between LLM applications and external data sources and tools. Whether you’re building an AI-powered IDE, enhancing a chat interface, or creating custom AI workflows, MCP provides a standardized way to connect LLMs with the context they need.
 
+<a href="https://glama.ai/mcp/servers/re2w48yrzg"><img width="380" height="200" src="https://glama.ai/mcp/servers/re2w48yrzg/badge" alt="Toolhouse Server MCP server" /></a>
+
 ## Features
 
 - Allows compatible MCP Clients (i.e Claude Desktop App) to access a vast library of tools to enhance their capabilities
