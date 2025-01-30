@@ -1,5 +1,6 @@
 # Toolhouse MCP Server
 
+[![smithery badge](https://smithery.ai/badge/mcp-server-toolhouse)](https://smithery.ai/server/mcp-server-toolhouse)
 ![Toolhouse MCP Server implementation](assets/mcp-server-toolhouse-banner.svg)
 
 This MCP server allows you to connect MCP clients with Toolhouse's tools. Built on top of [Toolhouse](https://toolhouse.ai/) and Groq's API - for fast inference.
@@ -118,6 +119,14 @@ Modify the configuration file to include:
         "TOOLHOUSE_BUNDLE_NAME": "a_bundle_name"
     }
 }
+```
+
+### Installing via Smithery
+
+To install Toolhouse MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/mcp-server-toolhouse):
+
+```bash
+npx -y @smithery/cli install mcp-server-toolhouse --client claude
 ```
 
 ## TODO
