@@ -1,196 +1,138 @@
-# Standard library imports
-import os
-import json
-import logging
-from datetime import datetime
-from dataclasses import dataclass
-from typing import Any, Sequence
 import asyncio
+import os
+import platform
+import uuid
 
-# Third-party imports
-from openai import AsyncOpenAI
-from mcp.server import Server, NotificationOptions, stdio
+import httpx
+
+from typing import Any, Dict, List, Union
+
+from mcp.server.lowlevel import Server, NotificationOptions
 from mcp.server.models import InitializationOptions
-from mcp.shared.exceptions import McpError
-from mcp.types import (
-    Tool,
-    TextContent,
-    ImageContent,
-    EmbeddedResource,
-)
-from toolhouse import Toolhouse
+import mcp.server.stdio
+import mcp.types as types
 
-# Initialize the MCP server
-app = Server("mcp-server-toolhouse")
+# Configuration constants
+TOOLHOUSE_BASE_URL: str = "https://api.toolhouse.ai/v1"
+GET_TOOLS_ENDPOINT: str = f"{TOOLHOUSE_BASE_URL}/get_tools"
+RUN_TOOLS_ENDPOINT: str = f"{TOOLHOUSE_BASE_URL}/run_tools"
 
+TOOLHOUSE_API_KEY: str = os.environ.get("TOOLHOUSE_API_KEY", None)
+if not TOOLHOUSE_API_KEY:
+    raise EnvironmentError("TOOLHOUSE_API_KEY environment variable is not set")
 
-# Custom exception hierarchy for better error handling
-class ToolhouseError(Exception):
-    """Base exception for Toolhouse-related errors"""
+TOOLHOUSE_BUNDLE: str = os.environ.get("TOOLHOUSE_BUNDLE", "mcp-toolhouse")
+if not TOOLHOUSE_BUNDLE:
+    raise EnvironmentError("TOOLHOUSE_BUNDLE environment variable is not set")
 
-    pass
-
-
-class ToolFetchError(ToolhouseError):
-    """Raised when there's an error fetching tools from the Toolhouse API"""
-
-    pass
+# Create a server instance
+server = Server("mcp-server-toolhouse")
 
 
-class ToolExecutionError(ToolhouseError):
-    """Raised when there's an error during tool execution"""
-
-    pass
-
-
-@dataclass
-class ToolhouseConfig:
-    """Configuration container for Toolhouse integration with default values"""
-
-    api_key: str = os.getenv("TOOLHOUSE_API_KEY") or TOOLHOUSE_API_KEY
-    bundle_name: str = os.getenv("TOOLHOUSE_BUNDLE_NAME", "mcp-toolhouse")
-    openai_key: str = os.getenv("GROQ_API_KEY") or GROQ_API_KEY
-    model: str = "llama-3.3-70b-versatile"  # Default LLM model
-    max_tokens: int = 1024  # Maximum tokens for LLM responses
-    provider: str = "openai"  # Default API provider
-    tool_provider: str = "anthropic"  # Provider for tool execution
-    base_url: str = "https://api.groq.com/openai/v1"  # Groq API endpoint
-
-    # Validate required API keys
-    if not api_key:
-        raise ToolhouseError("Missing TOOLHOUSE_API_KEY environment variable")
-    if not openai_key:
-        raise ToolhouseError("Missing GROQ_API_KEY environment variable")
+def get_common_headers() -> Dict[str, str]:
+    """Constructs and returns common headers for HTTP requests."""
+    return {
+        "Content-Type": "application/json",
+        "User-Agent": f"Toolhouse/1.2.1 Python/{platform.python_version()}",
+        "Authorization": f"Bearer {TOOLHOUSE_API_KEY}",
+    }
 
 
-def setup_logging() -> logging.Logger:
-    """Configure logging with both file and console output"""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        handlers=[logging.FileHandler("mcp-toolhouse.log"), logging.StreamHandler()],
-    )
-    return logging.getLogger("mcp-server-toolhouse")
+@server.list_tools()
+async def handle_list_tools() -> List[types.Tool]:
+    """
+    Queries the Toolhouse API for tools and returns a list of tool objects.
+    """
+    headers = get_common_headers()
+    payload = {
+        "bundle": TOOLHOUSE_BUNDLE,
+        "metadata": {},
+        "provider": "openai",
+    }
+
+    response = httpx.post(GET_TOOLS_ENDPOINT, headers=headers, json=payload)
+    response.raise_for_status()
+    response_data = response.json()
+
+    tools: List[types.Tool] = []
+    for tool in response_data:
+        func = tool.get("function", {})
+        tools.append(
+            types.Tool.model_construct(
+                name=func.get("name", ""),
+                description=func.get("description", ""),
+                inputSchema=func.get("parameters", {}),
+            )
+        )
+
+    return tools
 
 
-LOGGER = setup_logging()
+@server.call_tool()
+async def handle_call_tool(
+    name: str, args: Dict[str, Any]
+) -> List[Union[types.TextContent, types.ImageContent, types.EmbeddedResource]]:
+    """
+    Calls a tool by sending a function call to the Toolhouse API and returns the result.
+    """
+    headers = get_common_headers()
+    payload = {
+        "provider": "openai",
+        "bundle": TOOLHOUSE_BUNDLE,
+        "metadata": {},
+        "content": {
+            "type": "function",
+            "id": str(uuid.uuid4()),
+            "function": {
+                "name": name,
+                "arguments": args,
+            },
+        },
+    }
 
-
-async def get_toolhouse_instance(config: ToolhouseConfig) -> Toolhouse:
-    """Initialize Toolhouse and OpenAI client instances with provided configuration"""
     try:
-        th = Toolhouse(config.api_key, provider="openai")
-        th.set_metadata("id", "orlando")  # Set user identifier
-        openai_client = AsyncOpenAI(api_key=config.openai_key, base_url=config.base_url)
-        return th, openai_client
-    except Exception as e:
-        raise ToolhouseError(f"Failed to initialize Toolhouse: {str(e)}")
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                RUN_TOOLS_ENDPOINT, headers=headers, json=payload
+            )
+            response.raise_for_status()
+    except httpx.RequestError as exc:
+        print(f"Request error while accessing {exc.request.url!r}: {exc}")
+        raise
+    except httpx.HTTPStatusError as exc:
+        print(
+            f"HTTP error {exc.response.status_code} while accessing {exc.request.url!r}: {exc}"
+        )
+        raise
+    except Exception as exc:
+        print(f"Unexpected error: {exc}")
+        raise
+
+    response_data = response.json()
+    content_text = response_data.get("content", {}).get("content") or "no response"
+    return [types.TextContent.model_construct(type="text", text=content_text)]
 
 
 async def run_server() -> None:
-    """Initialize and run the MCP server with stdio communication"""
-    try:
-        async with stdio.stdio_server() as (read_stream, write_stream):
-            await app.run(
-                read_stream,
-                write_stream,
-                InitializationOptions(
-                    server_name="toolhouse",
-                    server_version="0.1.0",
-                    capabilities=app.get_capabilities(
-                        notification_options=NotificationOptions(),
-                        experimental_capabilities={},
-                    ),
-                ),
-            )
-    except Exception as e:
-        LOGGER.error("Server failed to start", exc_info=True)
-        raise McpError(f"Server startup failed: {str(e)}")
-
-
-@app.list_tools()
-async def handle_list_tools() -> list[Tool]:
-    """Retrieve and format available tools from Toolhouse"""
-    try:
-        th = Toolhouse(
-            provider=ToolhouseConfig.tool_provider, api_key=ToolhouseConfig.api_key
+    """
+    Runs the MCP server using stdio streams.
+    """
+    async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
+        init_options = InitializationOptions(
+            server_name="MCP Toolhouse server",
+            server_version="0.2.0",
+            capabilities=server.get_capabilities(
+                notification_options=NotificationOptions(),
+                experimental_capabilities={},
+            ),
         )
-        tools = th.get_tools(ToolhouseConfig.bundle_name)
-        # Convert Toolhouse tool format to MCP tool format
-        parsed_tools = [
-            Tool(
-                name=tool["name"],
-                description=tool["description"],
-                inputSchema=tool["input_schema"],
-            )
-            for tool in tools
-        ]
-        return parsed_tools
-    except Exception as e:
-        LOGGER.error("Tool listing failed", exc_info=True)
-        raise ToolFetchError(f"Failed to list tools: {str(e)}")
+        await server.run(read_stream, write_stream, init_options)
 
 
-@app.call_tool()
-async def handle_call_tool(
-    name: str, arguments: Any | None
-) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
-    """Execute a tool using Groq's LLM API via async OpenAI SDK"""
-
-    # Prepare initial message for the LLM
-    messages = [
-        {
-            "role": "user",
-            "content": f"Can you use the tool {name}? Here is some more information that I give you to complete your task: {arguments}",
-        }
-    ]
-
-    try:
-        config = ToolhouseConfig
-        th, openai_client = await get_toolhouse_instance(config)
-        tools = th.get_tools(config.bundle_name)
-
-        # First LLM call to get tool execution plan
-        response = await openai_client.chat.completions.create(
-            model=config.model,
-            max_tokens=config.max_tokens,
-            messages=messages,
-            tools=tools,
-        )
-
-        # Execute tools based on LLM response
-        messages.extend(th.run_tools(response))
-
-        # Clean up message content
-        for i in range(len(messages)):
-            if "audio" in messages[i]:
-                del messages[i]["audio"]
-            if "refusal" in messages[i]:
-                del messages[i]["refusal"]
-
-        # Final LLM call to process tool results
-        final_response = await openai_client.chat.completions.create(
-            model=config.model,
-            max_tokens=config.max_tokens,
-            messages=messages,
-            tools=tools,
-        )
-
-        answer = final_response.choices[0].message.content
-        return [TextContent(type="text", text=json.dumps(answer, indent=2))]
-
-    except Exception as e:
-        raise ToolExecutionError(f"Failed to execute tool: {str(e)}")
-
-
-async def main():
-    """Application entry point with error handling"""
-    try:
-        await run_server()
-    except Exception as e:
-        LOGGER.error("Application failed to start", exc_info=True)
-        raise
+def main() -> None:
+    """Main entry point for starting the MCP Toolhouse server."""
+    asyncio.run(run_server())
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
