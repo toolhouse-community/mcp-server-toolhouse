@@ -1,0 +1,25 @@
+# Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
+
+startCommand:
+  type: stdio
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+    required:
+      - toolhouseApiKey
+      - groqApiKey
+      - toolhouseBundleName
+    properties:
+      toolhouseApiKey:
+        type: string
+        description: The API key for Toolhouse.
+      groqApiKey:
+        type: string
+        description: The API key for Groq.
+      toolhouseBundleName:
+        type: string
+        description: The name of the Toolhouse bundle.
+  commandFunction:
+    # A function that produces the CLI command to start the MCP on stdio.
+    |-
+    (config) => ({ command: 'mcp-server-toolhouse', env: { TOOLHOUSE_API_KEY: config.toolhouseApiKey, GROQ_API_KEY: config.groqApiKey, TOOLHOUSE_BUNDLE_NAME: config.toolhouseBundleName } })
