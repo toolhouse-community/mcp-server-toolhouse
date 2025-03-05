@@ -32,7 +32,7 @@ This MCP server allows you to connect MCP clients with Toolhouse's tools. Built 
 3. (Optional) Set these environment variables if you prefer not having them in the configuration:
    ```bash
    export TOOLHOUSE_API_KEY="your_toolhouse_api_key"
-   export TOOLHOUSE_BUNDLE_NAME="your_bundle_name"
+   export TOOLHOUSE_BUNDLE="your_bundle_name"
    ```
 
 ### Starting the server
@@ -67,7 +67,7 @@ Modify the configuration file to look like this:
       "args": ["mcp_server_toolhouse"],
       "env": {
         "TOOLHOUSE_API_KEY": "your_toolhouse_api_key",
-        "TOOLHOUSE_BUNDLE_NAME": "a_bundle_name"
+        "TOOLHOUSE_BUNDLE": "a_bundle_name"
       }
     }
   }
@@ -89,7 +89,7 @@ Modify the configuration file to look like this:
       ],
       "env": {
         "TOOLHOUSE_API_KEY": "your_toolhouse_api_key",
-        "TOOLHOUSE_BUNDLE_NAME": "a_bundle_name"
+        "TOOLHOUSE_BUNDLE": "a_bundle_name"
       }
     }
   }
@@ -131,7 +131,7 @@ Modify the configuration file to include:
     ],
     "env": {
         "TOOLHOUSE_API_KEY": "your_toolhouse_api_key",
-        "TOOLHOUSE_BUNDLE_NAME": "a_bundle_name"
+        "TOOLHOUSE_BUNDLE": "a_bundle_name"
     }
 }
 ```
