@@ -21,9 +21,9 @@ TOOLHOUSE_API_KEY: str = os.environ.get("TOOLHOUSE_API_KEY", None)
 if not TOOLHOUSE_API_KEY:
     raise EnvironmentError("TOOLHOUSE_API_KEY environment variable is not set")
 
-TOOLHOUSE_BUNDLE: str = os.environ.get("TOOLHOUSE_BUNDLE", "mcp-toolhouse")
+TOOLHOUSE_BUNDLE: str = os.environ.get("TOOLHOUSE_BUNDLE_NAME", "mcp-toolhouse")
 if not TOOLHOUSE_BUNDLE:
-    raise EnvironmentError("TOOLHOUSE_BUNDLE environment variable is not set")
+    raise EnvironmentError("TOOLHOUSE_BUNDLE_NAME environment variable is not set")
 
 # Create a server instance
 server = Server("mcp-server-toolhouse")
